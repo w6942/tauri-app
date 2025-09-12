@@ -1,0 +1,63 @@
+# .github/workflows/release.yml
+
+name: 'Build & Release Tauri App'
+
+on:
+  push:
+    branches:
+      - main  # Triggers on push to the main branch
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+
+jobs:
+  build-and-release:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Define the platforms to build on
+        platform: [macos-latest, ubuntu-22.04, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      # 1. Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install the Rust toolchain
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # 3. Setup PNPM - this is a crucial step for your setup
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9 # Or your desired pnpm version
+
+      # 4. Setup Node.js v22 and configure it to use PNPM's cache
+      - name: Setup Node.js v22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm' # This is the key for caching with pnpm
+
+      # 5. Install Linux dependencies (only runs on the Ubuntu runner)
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # 6. Install frontend dependencies using pnpm
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 7. Build the Tauri application using the official Tauri Action
+      # This action handles all the complexity of building, signing, and packaging.
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }} # For updater signing
+          # TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }} # For updater signing
+        with:
+          # The CLI argument to run, e.g., `tauri build --release`
+          args: '--release'
