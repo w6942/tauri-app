@@ -12,7 +12,7 @@ import { ref } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 
-const waitTimeMs = ref(1000);
+const waitTimeMs = ref(10);
 
 function record() {
   new WebviewWindow('windowrecord', {

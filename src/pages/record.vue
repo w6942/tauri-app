@@ -7,15 +7,14 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEventListener } from '@vueuse/core';
 
-
 useEventListener('keydown', event => {
   if (event.key === 'Escape') {
     close();
   }
 });
 
-function record() {
-  invoke('record').finally(() => close());
+function record(event: MouseEvent) {
+  invoke('record', {x: event.screenX, y: event.screenY}).finally(() => close());
 }
 
 function close() {

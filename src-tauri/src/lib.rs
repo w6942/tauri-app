@@ -4,7 +4,7 @@ use std::time::Duration;
 use enigo::{Button, Coordinate, Direction, Enigo, Mouse};
 
 enum ReplayCommand {
-    Record,
+    Record (i32, i32),
     Start { wait_time_ms: u64 },
     Stop,
 }
@@ -14,11 +14,11 @@ pub struct AppState {
 }
 
 #[tauri::command]
-fn record(state: tauri::State<AppState>) -> Result<(), String> {
+fn record(x: i32, y: i32, state: tauri::State<AppState>) -> Result<(), String> {
     println!("[Record Command] Sending RECORD signal to worker...");
     state
         .command_sender
-        .send(ReplayCommand::Record)
+        .send(ReplayCommand::Record(x, y))
         .map_err(|e| e.to_string())
 }
 
@@ -54,15 +54,15 @@ pub fn run() {
                 let mut is_replaying = false;
                 let mut recorded_position: Option<(i32, i32)> = None;
                 let mut wait_time_ms = 100u64;
-                const MOUSE_TOLERANCE: i32 = 5;
+                const MOUSE_TOLERANCE: i32 = 50;
 
                 // 后台线程的主循环
                 loop {
                     // 8. 非阻塞地检查新指令
                     if let Ok(cmd) = rx.try_recv() {
                         match cmd {
-                            ReplayCommand::Record => {
-                                recorded_position = enigo.location().ok();
+                            ReplayCommand::Record (x, y) => {
+                                recorded_position = Option::from((x, y));
                                 if let Some((x, y)) = recorded_position {
                                     println!("[Worker] Position recorded at ({}, {})", x, y);
                                 }
